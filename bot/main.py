@@ -25,7 +25,7 @@ from bot.handlers.chat import chat_handler
 from bot.handlers.models import models_handler, model_handler, model_callback_handler
 from bot.handlers.session import new_handler, history_handler, clear_handler
 from bot.handlers.quota import quota_handler
-from bot.handlers.admin import status_handler, restart_handler
+from bot.handlers.admin import status_handler, restart_handler, timeout_handler
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ def create_app():
     app.add_handler(CommandHandler("clear", auth(clear_handler)))
     app.add_handler(CommandHandler("status", auth(status_handler)))
     app.add_handler(CommandHandler("restart", auth(restart_handler)))
+    app.add_handler(CommandHandler("timeout", auth(timeout_handler)))
 
     # Callback query handler for inline keyboards (model selection)
     app.add_handler(
@@ -124,6 +125,7 @@ async def _post_init(application):
         BotCommand("clear", "Clear history"),
         BotCommand("status", "Bot status"),
         BotCommand("restart", "Restart session"),
+        BotCommand("timeout", "Set timeout in minutes"),
     ]
     await application.bot.set_my_commands(commands)
 

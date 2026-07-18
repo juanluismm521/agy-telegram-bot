@@ -4,6 +4,8 @@ Admin handlers — bot status, session restart.
 
 import logging
 import time
+import os
+import re
 
 from telegram import Update
 from telegram.ext import ContextTypes
@@ -72,3 +74,43 @@ async def restart_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
     logger.info(f"User {user_id} restarted their session")
+
+async def timeout_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    /timeout <minutes> — Update the session timeout in minutes.
+    """
+    if not context.args:
+        await update.message.reply_text("ℹ️ Usage: `/timeout <minutes>`", parse_mode="Markdown")
+        return
+
+    try:
+        minutes = int(context.args[0])
+        if minutes <= 0:
+            raise ValueError()
+    except ValueError:
+        await update.message.reply_text("❌ Please provide a valid positive number for minutes.")
+        return
+
+    # Update runtime config
+    agent_manager = context.bot_data["agent_manager"]
+    agent_manager._session_timeout = minutes * 60
+    
+    settings = context.bot_data["settings"]
+    settings.session_timeout_minutes = minutes
+
+    # Update .env file
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r") as f:
+            content = f.read()
+        
+        if "SESSION_TIMEOUT_MINUTES=" in content:
+            content = re.sub(r"SESSION_TIMEOUT_MINUTES=.*", f"SESSION_TIMEOUT_MINUTES={minutes}", content)
+        else:
+            content += f"\nSESSION_TIMEOUT_MINUTES={minutes}\n"
+            
+        with open(env_path, "w") as f:
+            f.write(content)
+
+    await update.message.reply_text(f"✅ Session timeout updated to **{minutes} minutes**.", parse_mode="Markdown")
+    logger.info(f"Session timeout updated to {minutes} minutes by {update.effective_user.id}")
