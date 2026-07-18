@@ -101,6 +101,7 @@ class AGYSessionManager:
             self._agy_bin or "agy",
             "--project", session.project_id,
             "--continue",
+            "--dangerously-skip-permissions",
             "--print", message
         ]
         if session.model and session.model != "default":

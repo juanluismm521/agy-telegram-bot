@@ -87,8 +87,11 @@ async def _handle_blocking(
             pass
 
     # Save assistant response
-    if db and conversation_id:
+    if db and conversation_id and response_text.strip():
         await db.add_message(conversation_id, "assistant", response_text)
+
+    if not response_text.strip():
+        response_text = "✅ Done (No text output from AGY)"
 
     # Send response (split if too long)
     chunks = split_message(response_text)
@@ -138,31 +141,33 @@ async def _handle_streaming(
         full_text = full_text or f"❌ Error: {str(e)}"
 
     # Final edit with complete response
-    if full_text:
+    if not full_text.strip():
+        full_text = "✅ Done (No text output from AGY)"
+
+    try:
+        chunks = split_message(full_text)
+        # Edit the first message
         try:
-            chunks = split_message(full_text)
-            # Edit the first message
-            try:
-                await sent_message.edit_text(chunks[0], parse_mode="Markdown")
-            except Exception:
-                await sent_message.edit_text(chunks[0])
+            await sent_message.edit_text(chunks[0], parse_mode="Markdown")
+        except Exception:
+            await sent_message.edit_text(chunks[0])
 
-            # Send additional messages if response was split
-            for chunk in chunks[1:]:
-                try:
-                    await update.message.reply_text(chunk, parse_mode="Markdown")
-                except Exception:
-                    await update.message.reply_text(chunk)
-
-        except Exception as e:
-            logger.error(f"Final message edit failed: {e}")
+        # Send additional messages if response was split
+        for chunk in chunks[1:]:
             try:
-                await sent_message.edit_text(full_text[:4096])
+                await update.message.reply_text(chunk, parse_mode="Markdown")
             except Exception:
-                pass
+                await update.message.reply_text(chunk)
+
+    except Exception as e:
+        logger.error(f"Final message edit failed: {e}")
+        try:
+            await sent_message.edit_text(full_text[:4096])
+        except Exception:
+            pass
 
     # Save to DB
-    if db and conversation_id and full_text:
+    if db and conversation_id and full_text.strip():
         await db.add_message(conversation_id, "assistant", full_text)
 
 
