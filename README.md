@@ -14,6 +14,8 @@
 - 🔐 **Whitelist** — only authorized Telegram User IDs can access
 - ♻️ **Sessions** — independent context per user
 - 🔧 **Full CLI** — `agy-telegram-bot` to manage everything from the terminal
+- 🎭 **Emoji Reactions** — visual feedback when the bot is processing requests
+- 🛠 **Robust edge-case handling** — properly processes empty messages and vibe coding workflows
 
 ## 📋 Prerequisites
 
@@ -68,6 +70,7 @@ agy-telegram-bot auth test           Test configuration (token, SDK, auth)
 | `/clear` | Clear all history |
 | `/status` | Bot status (uptime, sessions) |
 | `/restart` | Restart the AGY session |
+| `/timeout` | Manage timeout settings |
 | *(message)* | Direct chat with AGY |
 
 ## ⚙️ Configuration
