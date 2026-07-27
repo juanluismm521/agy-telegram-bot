@@ -100,8 +100,8 @@ class AGYSessionManager:
         cmd = [
             self._agy_bin or "agy",
             "--project", session.project_id,
-            "--continue",
             "--dangerously-skip-permissions",
+            "--print-timeout", f"{int(self._session_timeout / 60)}m",
             "--print", message
         ]
         if session.model and session.model != "default":

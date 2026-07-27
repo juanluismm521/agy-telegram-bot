@@ -57,16 +57,35 @@ async def chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Save user message
         await db.add_message(conversation_id, "user", message_text)
 
+        # Build prompt from history
+        messages = await db.get_messages(conversation_id, limit=30)
+        
+        is_slash_cmd = any(message_text.startswith(f"/{cmd}") for cmd in ["goal", "plan", "schedule", "learn"])
+        
+        if is_slash_cmd:
+            prompt_text = f"{message_text}\n\n[Context - Conversation history:]\n"
+            for msg in messages[:-1]:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                prompt_text += f"{role}: {msg['content']}\n\n"
+        else:
+            prompt_text = "Here is the conversation history:\n\n"
+            for msg in messages:
+                role = "User" if msg["role"] == "user" else "Assistant"
+                prompt_text += f"{role}: {msg['content']}\n\n"
+            prompt_text += "Please respond to the User's last message."
+    else:
+        prompt_text = message_text
+
     # Show typing indicator
     await update.message.chat.send_action(ChatAction.TYPING)
 
     if settings.enable_streaming:
         await _handle_streaming(
-            update, context, agent_manager, db, conversation_id, message_text, user.id
+            update, context, agent_manager, db, conversation_id, prompt_text, user.id
         )
     else:
         await _handle_blocking(
-            update, context, agent_manager, db, conversation_id, message_text, user.id
+            update, context, agent_manager, db, conversation_id, prompt_text, user.id
         )
 
 

@@ -72,6 +72,10 @@ def create_app():
     app.add_handler(CommandHandler("restart", auth(restart_handler)))
     app.add_handler(CommandHandler("timeout", auth(timeout_handler)))
 
+    # Pass-through slash commands to AGY
+    for cmd in ["goal", "plan", "schedule", "learn"]:
+        app.add_handler(CommandHandler(cmd, auth(chat_handler)))
+
     # Callback query handler for inline keyboards (model selection)
     app.add_handler(
         CallbackQueryHandler(auth_cb(model_callback_handler), pattern=r"^model:")

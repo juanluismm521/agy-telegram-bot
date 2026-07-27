@@ -53,5 +53,12 @@ async def quota_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if stats.get("total_tokens", 0) > 0:
             parts.append(f"🔢 Cumulative tokens: {stats['total_tokens']:,}")
 
+        if stats.get("models"):
+            parts.append("\n**🧠 Usage per Model**")
+            # Sort by messages count
+            for model_name, data in sorted(stats["models"].items(), key=lambda x: x[1]["messages"], reverse=True):
+                parts.append(f"🔹 `{model_name}`: {data['messages']} msgs, {data['tokens']:,} tokens")
+                parts.append(f"   └ 📉 Remaining: ♾️ (Unlimited)")
+
     text = "\n".join(parts)
     await update.message.reply_text(text, parse_mode="Markdown")

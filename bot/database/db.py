@@ -270,6 +270,26 @@ class Database:
             row = await cursor.fetchone()
             stats["total_conversations"] = row["count"]
 
+        # Per-model usage
+        async with self._db.execute(
+            """
+            SELECT c.model_used, COUNT(*) as count, COALESCE(SUM(m.tokens_used), 0) as tokens 
+            FROM messages m
+            JOIN conversations c ON m.conversation_id = c.id
+            WHERE c.telegram_id = ? AND m.role = 'user'
+            GROUP BY c.model_used
+            """,
+            (telegram_id,),
+        ) as cursor:
+            rows = await cursor.fetchall()
+            stats["models"] = {
+                row["model_used"] or "default": {
+                    "messages": row["count"],
+                    "tokens": row["tokens"]
+                } 
+                for row in rows
+            }
+
         return stats
 
     async def clear_history(self, telegram_id: int) -> int:
