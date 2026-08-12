@@ -22,6 +22,22 @@ def ensure_dirs():
     os.makedirs(DEFAULT_DATA_DIR, exist_ok=True)
 
 
+# If start/restart is invoked from inside a live Claude Code session (e.g. this
+# bot's own agent handling a "restart yourself" request), subprocess.Popen would
+# otherwise hand the new daemon that session's internal identity — confusing
+# whatever CLI the daemon itself shells out to.
+_LEAKED_ENV_PREFIXES = ("CLAUDE_CODE_", "CLAUDECODE")
+_LEAKED_ENV_KEYS = {"CLAUDE_PID", "CLAUDE_EFFORT", "SUDO_COMMAND", "AI_AGENT", "IS_SANDBOX"}
+
+
+def _clean_env() -> dict:
+    return {
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith(_LEAKED_ENV_PREFIXES) and k not in _LEAKED_ENV_KEYS
+    }
+
+
 def get_pid() -> int | None:
     """Read the PID from the PID file. Returns None if not running."""
     if not os.path.exists(DEFAULT_PID_FILE):
@@ -92,6 +108,7 @@ def start_daemon(project_dir: str) -> tuple[bool, str]:
         stdout=log_file,
         stderr=subprocess.STDOUT,
         start_new_session=True,  # Detach from terminal
+        env=_clean_env(),
     )
 
     write_pid(process.pid)

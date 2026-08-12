@@ -211,7 +211,7 @@ class AGYSessionManager:
 
         use_model = model or old_model
         await self.get_or_create_session(user_id, use_model)
-        return f"🔄 New session created! (model: {use_model or 'default'})"
+        return f"🔄 New session created!\n🤖 Model: {use_model or 'AGY default'}"
 
     async def change_model(self, user_id: int, model: str) -> str:
         if user_id in self._sessions and self._sessions[user_id].is_busy:

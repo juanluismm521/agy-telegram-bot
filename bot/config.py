@@ -7,7 +7,8 @@ import logging
 from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)  # this bot's .env must win over inherited env (e.g. a
+# launcher process's own DEFAULT_MODEL/CLAUDE_* leaking through subprocess.Popen)
 
 logger = logging.getLogger(__name__)
 

@@ -156,8 +156,7 @@ def format_usage(entries: list[dict]) -> str:
                 lines.append(f"_{note}_")
         lines.append("")
 
-    lines.append(f"_Updated {datetime.now(timezone.utc):%H:%M} UTC_")
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip()
 
 
 async def get_usage_message() -> str:
