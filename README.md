@@ -66,6 +66,7 @@ agy-telegram-bot auth test           Test configuration (token, SDK, auth)
 | `/model <name>` | Switch model |
 | `/models` | List models with selection buttons |
 | `/quota` | Usage statistics |
+| `/usage` | AGY plan limits — 5h & weekly windows per model family, same data as AGY's `/usage` |
 | `/history` | Recent messages from current conversation |
 | `/clear` | Clear all history |
 | `/status` | Bot status (uptime, sessions) |
@@ -110,6 +111,7 @@ agy-telegram-bot/
 │   │   ├── models.py     # /model, /models
 │   │   ├── session.py    # /new, /history, /clear
 │   │   ├── quota.py      # /quota
+│   │   ├── usage.py      # /usage
 │   │   └── admin.py      # /status, /restart
 │   ├── middleware/
 │   │   └── auth.py       # Whitelist auth

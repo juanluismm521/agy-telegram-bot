@@ -28,6 +28,7 @@ Send me a message and I'll forward it to AGY.
 
 📊 **Stats**
 • `/quota` — Usage statistics
+• `/usage` — AGY plan limits (5h / weekly)
 • `/status` — Bot and session status
 
 🔧 **Management**

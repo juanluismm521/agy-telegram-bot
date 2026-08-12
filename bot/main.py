@@ -25,6 +25,7 @@ from bot.handlers.chat import chat_handler
 from bot.handlers.models import models_handler, model_handler, model_callback_handler
 from bot.handlers.session import new_handler, history_handler, clear_handler
 from bot.handlers.quota import quota_handler
+from bot.handlers.usage import usage_handler
 from bot.handlers.admin import status_handler, restart_handler, timeout_handler
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,11 @@ def create_app():
         format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
         level=settings.log_level_int,
     )
+
+    # The HTTP stack logs one record per getUpdates poll — every few seconds, forever,
+    # with the bot token embedded in the request URL. Keep it out of the log file.
+    for noisy in ("httpx", "httpcore", "telegram.ext.ExtBot", "telegram.Bot"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     logger.info("🚀 Starting AGY Telegram Bot...")
     logger.info(f"   Allowed users: {settings.allowed_user_ids}")
@@ -66,6 +72,7 @@ def create_app():
     app.add_handler(CommandHandler("models", auth(models_handler)))
     app.add_handler(CommandHandler("model", auth(model_handler)))
     app.add_handler(CommandHandler("quota", auth(quota_handler)))
+    app.add_handler(CommandHandler("usage", auth(usage_handler)))
     app.add_handler(CommandHandler("history", auth(history_handler)))
     app.add_handler(CommandHandler("clear", auth(clear_handler)))
     app.add_handler(CommandHandler("status", auth(status_handler)))
@@ -125,6 +132,7 @@ async def _post_init(application):
         BotCommand("model", "View/change model"),
         BotCommand("models", "List models"),
         BotCommand("quota", "Usage stats"),
+        BotCommand("usage", "AGY plan limits (5h / weekly)"),
         BotCommand("history", "Session history"),
         BotCommand("clear", "Clear history"),
         BotCommand("status", "Bot status"),
