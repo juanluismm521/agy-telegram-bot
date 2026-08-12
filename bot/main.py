@@ -26,6 +26,8 @@ from bot.handlers.models import models_handler, model_handler, model_callback_ha
 from bot.handlers.session import new_handler, history_handler, clear_handler
 from bot.handlers.quota import quota_handler
 from bot.handlers.usage import usage_handler
+from bot.handlers.goal import goal_handler
+from bot.goals import resume_pending_on_startup
 from bot.handlers.admin import status_handler, restart_handler, timeout_handler
 
 logger = logging.getLogger(__name__)
@@ -78,9 +80,10 @@ def create_app():
     app.add_handler(CommandHandler("status", auth(status_handler)))
     app.add_handler(CommandHandler("restart", auth(restart_handler)))
     app.add_handler(CommandHandler("timeout", auth(timeout_handler)))
+    app.add_handler(CommandHandler("goal", auth(goal_handler)))
 
     # Pass-through slash commands to AGY
-    for cmd in ["goal", "plan", "schedule", "learn"]:
+    for cmd in ["plan", "schedule", "learn"]:
         app.add_handler(CommandHandler(cmd, auth(chat_handler)))
 
     # Callback query handler for inline keyboards (model selection)
@@ -120,6 +123,8 @@ async def _post_init(application):
     await agent_manager.start()
     application.bot_data["agent_manager"] = agent_manager
 
+    await resume_pending_on_startup(application)
+
     logger.info("✅ AGY Telegram Bot is ready!")
 
     # Set bot commands for the menu
@@ -133,6 +138,7 @@ async def _post_init(application):
         BotCommand("models", "List models"),
         BotCommand("quota", "Usage stats"),
         BotCommand("usage", "AGY plan limits (5h / weekly)"),
+        BotCommand("goal", "Set/view a standing goal (auto-resumes after quota reset)"),
         BotCommand("history", "Session history"),
         BotCommand("clear", "Clear history"),
         BotCommand("status", "Bot status"),

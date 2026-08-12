@@ -73,6 +73,15 @@ class Database:
                 ON messages(conversation_id);
             CREATE INDEX IF NOT EXISTS idx_messages_timestamp
                 ON messages(timestamp);
+
+            CREATE TABLE IF NOT EXISTS goals (
+                telegram_id INTEGER PRIMARY KEY,
+                goal_text TEXT NOT NULL,
+                created_at REAL NOT NULL,
+                pending_message TEXT,
+                pending_resume_at REAL,
+                FOREIGN KEY (telegram_id) REFERENCES users(telegram_id)
+            );
         """)
         await self._db.commit()
 
@@ -291,6 +300,68 @@ class Database:
             }
 
         return stats
+
+    # === Goals (standing objective + quota-wait auto-resume) ===
+
+    async def set_goal(self, telegram_id: int, goal_text: str):
+        """Set (or replace) the user's standing goal, clearing any stale pending resume."""
+        now = time.time()
+        await self._db.execute(
+            """
+            INSERT INTO goals (telegram_id, goal_text, created_at)
+            VALUES (?, ?, ?)
+            ON CONFLICT(telegram_id) DO UPDATE SET
+                goal_text = excluded.goal_text,
+                created_at = excluded.created_at,
+                pending_message = NULL,
+                pending_resume_at = NULL
+            """,
+            (telegram_id, goal_text, now),
+        )
+        await self._db.commit()
+
+    async def get_goal(self, telegram_id: int) -> str | None:
+        async with self._db.execute(
+            "SELECT goal_text FROM goals WHERE telegram_id = ?", (telegram_id,)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return row["goal_text"] if row else None
+
+    async def clear_goal(self, telegram_id: int):
+        await self._db.execute("DELETE FROM goals WHERE telegram_id = ?", (telegram_id,))
+        await self._db.commit()
+
+    async def set_pending_resume(self, telegram_id: int, message: str, resume_at: float):
+        await self._db.execute(
+            "UPDATE goals SET pending_message = ?, pending_resume_at = ? WHERE telegram_id = ?",
+            (message, resume_at, telegram_id),
+        )
+        await self._db.commit()
+
+    async def get_pending_resume(self, telegram_id: int) -> dict | None:
+        async with self._db.execute(
+            "SELECT pending_message, pending_resume_at FROM goals "
+            "WHERE telegram_id = ? AND pending_message IS NOT NULL",
+            (telegram_id,),
+        ) as cursor:
+            row = await cursor.fetchone()
+            return dict(row) if row else None
+
+    async def clear_pending_resume(self, telegram_id: int):
+        await self._db.execute(
+            "UPDATE goals SET pending_message = NULL, pending_resume_at = NULL WHERE telegram_id = ?",
+            (telegram_id,),
+        )
+        await self._db.commit()
+
+    async def get_all_pending_resumes(self) -> list[dict]:
+        """All users with a scheduled auto-resume — used to recover after a bot restart."""
+        async with self._db.execute(
+            "SELECT telegram_id, goal_text, pending_message, pending_resume_at "
+            "FROM goals WHERE pending_message IS NOT NULL"
+        ) as cursor:
+            rows = await cursor.fetchall()
+            return [dict(r) for r in rows]
 
     async def clear_history(self, telegram_id: int) -> int:
         """Delete all conversations and messages for a user. Returns count deleted."""

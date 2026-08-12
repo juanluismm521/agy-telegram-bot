@@ -12,6 +12,7 @@ from telegram.constants import ChatAction
 from telegram.ext import ContextTypes
 from telegram import ReactionTypeEmoji
 
+from bot.goals import is_quota_error, schedule_resume
 from bot.utils.formatting import split_message
 
 logger = logging.getLogger(__name__)
@@ -116,6 +117,13 @@ async def _handle_blocking(
         except asyncio.CancelledError:
             pass
 
+    if db and is_quota_error(response_text):
+        note = await schedule_resume(
+            context.application, user_id, update.effective_chat.id, response_text, update.message.text.strip()
+        )
+        if note:
+            response_text = response_text + "\n\n" + note
+
     # Save assistant response
     if db and conversation_id and response_text.strip():
         await db.add_message(conversation_id, "assistant", response_text)
@@ -183,6 +191,13 @@ async def _handle_streaming(
         await update.message.set_reaction(reaction=[])
     except Exception:
         pass
+
+    if db and is_quota_error(full_text):
+        note = await schedule_resume(
+            context.application, user_id, update.effective_chat.id, full_text, update.message.text.strip()
+        )
+        if note:
+            full_text = full_text + "\n\n" + note
 
     # Final edit with complete response
     if not full_text.strip():
