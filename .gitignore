@@ -1,8 +1,16 @@
-# Environment
+# Environment — never commit real credentials (.env.example is the template)
 .env
+.env.*
+!.env.example
 .venv/
 venv/
 env/
+
+# Local scratch and one-off scripts — these have held live bot tokens
+scratch/
+test_reaction.py
+test_pexpect.py
+*.patch
 
 # Python
 __pycache__/

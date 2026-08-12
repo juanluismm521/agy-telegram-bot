@@ -54,7 +54,7 @@ def get_available_models() -> list[str]:
             return []
             
         # Parse output into a list of strings, removing empty lines and non-model lines
-        models = [line.strip() for line in result.stdout.split("\n") if line.strip() and not line.startswith("Welcome") and not line.startswith("▀")]
+        models = [line.split("\t")[0].strip() for line in result.stdout.split("\n") if line.strip() and not line.startswith("Welcome") and not line.startswith("▀")]
         return models
     except Exception as e:
         logger.error(f"Failed to fetch models from AGY CLI: {e}")

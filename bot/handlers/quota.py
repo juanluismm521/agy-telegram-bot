@@ -57,8 +57,7 @@ async def quota_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parts.append("\n**🧠 Usage per Model**")
             # Sort by messages count
             for model_name, data in sorted(stats["models"].items(), key=lambda x: x[1]["messages"], reverse=True):
-                parts.append(f"🔹 `{model_name}`: {data['messages']} msgs, {data['tokens']:,} tokens")
-                parts.append(f"   └ 📉 Remaining: ♾️ (Unlimited)")
+                parts.append(f"🔹 `{model_name}`: {data['messages']} msgs")
 
     text = "\n".join(parts)
     await update.message.reply_text(text, parse_mode="Markdown")

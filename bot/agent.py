@@ -11,6 +11,8 @@ import time
 import os
 from dataclasses import dataclass, field
 
+from bot.config import get_agy_bin
+
 logger = logging.getLogger(__name__)
 
 
@@ -47,11 +49,11 @@ class AGYSessionManager:
         self._session_timeout = session_timeout_minutes * 60
         self._cleanup_task: asyncio.Task | None = None
 
-        # Find the agy binary
-        import shutil
-        self._agy_bin = shutil.which("agy")
+        # Find the agy binary — get_agy_bin() also checks the usual install paths,
+        # so the bot still works when the daemon starts without ~/.local/bin on PATH.
+        self._agy_bin = get_agy_bin()
         if not self._agy_bin:
-            logger.warning("AGY CLI not found in PATH! Bot will not be able to generate responses.")
+            logger.warning("AGY CLI not found! Bot will not be able to generate responses.")
 
     async def start(self):
         """Start the session manager and background cleanup task."""
