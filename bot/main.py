@@ -28,6 +28,7 @@ from bot.handlers.quota import quota_handler
 from bot.handlers.usage import usage_handler
 from bot.handlers.goal import goal_handler
 from bot.goals import resume_pending_on_startup
+from bot.utils.timezone import warm_timezone
 from bot.handlers.admin import status_handler, restart_handler, timeout_handler
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,8 @@ def create_app():
 async def _post_init(application):
     """Initialize async components after the app is built."""
     settings = application.bot_data["settings"]
+
+    await warm_timezone()
 
     # Initialize database
     db = Database(settings.db_path)

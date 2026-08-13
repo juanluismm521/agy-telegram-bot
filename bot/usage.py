@@ -16,6 +16,7 @@ import re
 from datetime import datetime, timezone
 
 from bot.config import get_agy_bin
+from bot.utils.timezone import to_local
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,8 @@ def _reset_note(iso: str) -> str | None:
         relative = f"{hours}h {minutes}m"
     else:
         relative = f"{minutes}m"
-    return f"resets in {relative} · {dt.astimezone(timezone.utc):%b %d, %H:%M} UTC"
+    local = to_local(dt)
+    return f"resets in {relative} · {local:%b %d, %H:%M} {local:%Z}"
 
 
 def format_usage(entries: list[dict]) -> str:

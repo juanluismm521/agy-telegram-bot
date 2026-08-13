@@ -55,6 +55,9 @@ agy-telegram-bot auth remove <ID>    Remove a user
 agy-telegram-bot auth test           Test configuration (token, SDK, auth)
 ```
 
+> Run these from the project directory — the CLI reads `.env` from the current
+> working directory, so calling it elsewhere picks up a different bot's config.
+
 ## 📱 Telegram Commands
 
 | Command | Description |
@@ -67,12 +70,36 @@ agy-telegram-bot auth test           Test configuration (token, SDK, auth)
 | `/models` | List models with selection buttons |
 | `/quota` | Usage statistics |
 | `/usage` | AGY plan limits — 5h & weekly windows per model family, same data as AGY's `/usage` |
+| `/goal <text>` | Set a standing objective (auto-resumes after a quota reset) |
+| `/goal` / `/goal off` | Show / clear the goal |
 | `/history` | Recent messages from current conversation |
 | `/clear` | Clear all history |
 | `/status` | Bot status (uptime, sessions) |
 | `/restart` | Restart the AGY session |
 | `/timeout` | Manage timeout settings |
 | *(message)* | Direct chat with AGY |
+
+> ℹ️ Reasoning-effort selection is a **Claude-bot-only** feature — AGY exposes no
+> equivalent knob, so `/model` here takes just a model name.
+
+## 🕒 Times are shown in the server's timezone
+
+Plan resets in `/usage` are rendered in local server time (`Aug 19, 09:42 CEST`)
+rather than UTC.
+
+The zone is resolved **once**, on first start, and cached in
+`~/.agy-telegram-bot/timezone.json`; later starts read the cache and never touch the
+network. Resolution order:
+
+1. `BOT_TIMEZONE` in `.env` (e.g. `Europe/Madrid`) — always wins
+2. The cached value from a previous start
+3. IP geolocation of the server
+4. The OS timezone, if it is actually configured (a bare `UTC` counts as unset)
+5. UTC as a last resort
+
+The cache stores the IANA **zone name**, never a fixed offset, so summer/winter time
+keeps being applied correctly. To force a zone, set `BOT_TIMEZONE`; to re-detect,
+delete the cache file and restart.
 
 ## ⚙️ Configuration
 
@@ -87,6 +114,7 @@ The `agy-telegram-bot setup` wizard configures everything interactively. Alterna
 | `ENABLE_STREAMING` | Streaming responses (true/false) | ❌ |
 | `SESSION_TIMEOUT_MINUTES` | Session inactivity timeout | ❌ |
 | `MAX_CONTEXT_MESSAGES` | Max messages in context | ❌ |
+| `BOT_TIMEZONE` | IANA zone for displayed times; empty = auto-detect | ❌ |
 
 > 💡 **Find your Telegram User ID**: send a message to [@userinfobot](https://t.me/userinfobot)
 
@@ -105,6 +133,8 @@ agy-telegram-bot/
 │   ├── daemon.py         # Daemon management (PID, start/stop)
 │   ├── config.py         # Configuration
 │   ├── agent.py          # AGY SDK wrapper
+│   ├── goals.py          # /goal + quota-wait auto-resume
+│   ├── usage.py          # /usage parsing (AGY CLI output)
 │   ├── handlers/
 │   │   ├── start.py      # /start, /help
 │   │   ├── chat.py       # Text messages → AGY
@@ -112,13 +142,15 @@ agy-telegram-bot/
 │   │   ├── session.py    # /new, /history, /clear
 │   │   ├── quota.py      # /quota
 │   │   ├── usage.py      # /usage
+│   │   ├── goal.py       # /goal
 │   │   └── admin.py      # /status, /restart
 │   ├── middleware/
 │   │   └── auth.py       # Whitelist auth
 │   ├── database/
 │   │   └── db.py         # SQLite persistence
 │   └── utils/
-│       └── formatting.py # Markdown & formatting
+│       ├── formatting.py # Markdown & formatting
+│       └── timezone.py   # Server timezone detection + cache
 └── README.md
 ```
 
